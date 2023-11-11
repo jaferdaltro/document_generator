@@ -1,0 +1,81 @@
+version: "2"
+
+services:
+  app:
+    build:
+      context: .
+    image: document_generator
+    #    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    command: tail -f /dev/null
+    volumes:
+      - .:/app
+      - document_bundle:/usr/local/bundle
+    ports:
+      - '3000:3000'
+      - '1234:1234'
+      - '26166:26168'
+    networks:
+      - document_net
+    stdin_open: true
+    tty: true
+    env_file:
+      - ${ENV_FILE:-.env}
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13.2-alpine
+    container_name: db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: doctor_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - document_net
+
+#  redis:
+#    image: redis:6.0.12-alpine
+#    container_name: projeto_redis
+#    command: redis-server
+#    volumes:
+#      - redis_data:/data
+#    ports:
+#      - "6379:6379"
+#    logging:
+#      driver: none
+#    networks:
+#      - document_net
+#
+#  sidekiq:
+#    image: document_generator
+#    container_name: document_sidekiq
+#    depends_on:
+#      - app
+#      - db
+#      - redis
+#    #mem_limit: 512m
+#    volumes:
+#      - .:/app
+#      - document_bundle:/usr/local/bundle
+#    command: dotenv -f ".env.sidekiq" bundle exec sidekiq -C config/sidekiq.yml
+#    networks:
+#      - document_net
+
+  mailcatcher:
+    restart: on-failure
+    image: dockage/mailcatcher:0.8.2
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+volumes:
+  pg_data:
+  redis_data:
+  document_bundle:
+
+networks:
+  document_net:
